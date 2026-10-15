@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: openride
+      POSTGRES_USER: openride
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openride -d openride"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [private]
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+  app:
+    container_name: openride
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://openride:${DB_PASSWORD}@db:5432/openride
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c 'python manage.py migrate --noinput && gunicorn project.wsgi:application -b 0.0.0.0:8000 -w 3 --error-logfile -'
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/openride/health/',timeout=3)"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+    networks: [private, web_proxy]
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+networks:
+  private:
+  web_proxy:
+    external: true
+volumes:
+  pgdata:

@@ -1,0 +1,6 @@
+Ahoj,
+
+pro obnovu hesla v OpenRide otevři tento odkaz:
+{{ protocol }}://{{ domain }}/openride/reset/{{ uid }}/{{ token }}/
+
+Pokud jsi o změnu nežádal/a, zprávu ignoruj.
